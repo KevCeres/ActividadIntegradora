@@ -1,24 +1,28 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify
+from pymongo import MongoClient
 
 app = Flask(__name__)
 
-tasks = []
+# Conectar a MongoDB local (localhost)
+client = MongoClient('mongodb://localhost:27017/')
+db = client['mi_base_de_datos']  # Puedes cambiar el nombre de la base de datos
+collection = db['mi_coleccion']  # Puedes cambiar el nombre de la colección
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+@app.route('/agregar', methods=['POST'])
+def agregar_dato():
+    # Obtener datos de la solicitud
+    data = request.json
+    # Insertar en MongoDB
+    collection.insert_one(data)
+    return jsonify({"mensaje": "Datos guardados exitosamente!"}), 201
 
-@app.route('/add', methods=['POST'])
-def add_task():
-    task = request.json.get('task')
-    if task:
-        tasks.append(task)
-        return jsonify({"message": "Tarea agregada", "tasks": tasks}), 200
-    return jsonify({"message": "Error: tarea no válida"}), 400
-
-@app.route('/get_tasks', methods=['GET'])
-def get_tasks():
-    return jsonify({"tasks": tasks})
+@app.route('/ver', methods=['GET'])
+def ver_datos():
+    # Obtener todos los documentos de la colección
+    datos = collection.find()
+    # Convertir los documentos a una lista
+    result = [str(dato) for dato in datos]
+    return jsonify(result)
 
 if __name__ == '__main__':
     app.run(debug=True)
